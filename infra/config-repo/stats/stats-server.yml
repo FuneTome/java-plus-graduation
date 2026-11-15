@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/stats
+    url: jdbc:postgresql://stats-db:5432/stats
     username: stats
     password: stats
   jpa:
@@ -12,5 +12,4 @@ spring:
         format_sql: true
 
 server:
-  port:
-    0
+  port: 9090

@@ -3,12 +3,9 @@ spring:
     gateway:
       routes:
         - id: main-service
-          uri: lb://main
+          uri: lb://main-service
           predicates:
-            - Path=/admin/**
-            - Path=/users/**
-            - Path=/categories/**
-            - Path=/events/**
+            - Path=/admin/**,/users/**,/categories/**,/events/**,/compilations/**
 
 server:
   port: 8080

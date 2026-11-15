@@ -9,9 +9,11 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 import ru.practicum.stats.dto.EndpointHitDto;
 import ru.practicum.stats.dto.ViewStatsDto;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -52,11 +54,15 @@ public class StatsClientImpl implements StatsClient {
         }
     }
 
+    private String buildUrl(String path) {
+        return getInstance().getUri().toString() + path;
+    }
+
     @Override
     public void hit(EndpointHitDto hitDto) {
         try {
             restClient.post()
-                    .uri(getInstance() + HIT)
+                    .uri(buildUrl(HIT))
                     .body(hitDto)
                     .retrieve()
                     .toBodilessEntity();
@@ -69,23 +75,22 @@ public class StatsClientImpl implements StatsClient {
 
     @Override
     public List<ViewStatsDto> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
+        UriComponentsBuilder builder = UriComponentsBuilder.fromUriString(buildUrl(STATS))
+                .queryParam("start", start.format(FORMATTER))
+                .queryParam("end", end.format(FORMATTER));
+
+        if (uris != null && !uris.isEmpty()) {
+            builder.queryParam("uris", uris.toArray());
+        }
+
+        if (unique != null) {
+            builder.queryParam("unique", unique);
+        }
+
+        URI uri = builder.encode().build().toUri();
+
         return restClient.get()
-                .uri(uriBuilder -> {
-                    uriBuilder.path(getInstance() + STATS)
-                            .queryParam("start", start.format(FORMATTER))
-                            .queryParam("end", end.format(FORMATTER));
-
-                    if (uris != null && !uris.isEmpty()) {
-                        uriBuilder.queryParam("uris", uris.toArray());
-                    }
-
-                    if (unique != null) {
-                        uriBuilder.queryParam("unique", unique);
-                    }
-
-                    return
-                            uriBuilder.build();
-                })
+                .uri(uri)
                 .retrieve()
                 // Перехват ответа ошибки и проброс нового исключения для дальнейшей обработке в мэйне
                 .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
